@@ -50,6 +50,22 @@ function getConfiguredChrono(): Chrono {
       };
     },
   } as Parser);
+
+  // 支援 YYYYMMDD 格式（例如 20260101 → 2026-01-01）
+  localizedChrono.parsers.push({
+    pattern: () => /\b(\d{8})\b/,
+    extract: (_context, match) => {
+      const text = match[1];
+      const year = parseInt(text.substring(0, 4));
+      const month = parseInt(text.substring(4, 6));
+      const day = parseInt(text.substring(6, 8));
+      if (month < 1 || month > 12 || day < 1 || day > 31) {
+        return null;
+      }
+      return { year, month, day };
+    },
+  } as Parser);
+
   return localizedChrono;
 }
 
@@ -61,6 +77,17 @@ export default class NLDParser {
   }
 
   getParsedDate(selectedText: string, weekStartPreference: DayOfWeek): Date {
+    // YYYYMMDD 格式直接解析，不依賴 chrono parser 順序
+    const yyyymmdd = selectedText.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (yyyymmdd) {
+      const [, y, m, d] = yyyymmdd;
+      const month = parseInt(m);
+      const day = parseInt(d);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return new Date(parseInt(y), month - 1, day);
+      }
+    }
+
     const parser = this.chrono;
     const initialParse = parser.parse(selectedText);
     const weekdayIsCertain = initialParse[0]?.start.isCertain("weekday");

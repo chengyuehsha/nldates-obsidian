@@ -69,6 +69,11 @@ export default class DateSuggest extends EditorSuggest<IDateCompletion> {
         .filter((items) => items.label.toLowerCase().startsWith(context.query));
     }
 
+    // YYYYMMDD 格式直接交給 chrono parser，不進 relative date 建議
+    if (/^\d{8}$/.test(context.query)) {
+      return [{ label: context.query }];
+    }
+
     const relativeDate =
       context.query.match(/^in ([+-]?\d+)/i) || context.query.match(/^([+-]?\d+)/i);
     if (relativeDate) {
